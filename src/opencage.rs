@@ -141,18 +141,20 @@ impl Opencage {
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
     ///     Point::new(-0.13427138328552246, 51.52319711775629),
     /// );
-    /// let res = oc.forward_full(&address, &Some(bbox.into())).unwrap();
+    /// let res = oc.forward_full(&address, &Some(bbox).unwrap();
     /// let first_result = &res.results[0];
     /// // the first result is correct
     /// assert_eq!(first_result.formatted, "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom");
     ///```
-    pub fn forward_full<T>(
+    pub fn forward_full<'a, U, T>(
         &self,
         place: &str,
-        bounds: &Option<InputBounds<T>>,
+        bounds: U,
     ) -> reqwest::Result<OpencageResponse<T>>
     where
         T: Float,
+        U: Into<Option<&'a (Point<T>, Point<T>)>>,
+        T: 'a,
         for<'de> T: Deserialize<'de>,
     {
         let ann = String::from("0");
@@ -166,8 +168,8 @@ impl Opencage {
             ("no_record", &record),
         ];
         // If search bounds are passed, use them
-        if let Some(ref bds) = *bounds {
-            bd = String::from(bds);
+        if let Some(bds) = bounds.into() {
+            bd = String::from(&InputBounds::from(&*bds));
             query.push(("bounds", &bd));
         }
         let mut resp = self
@@ -537,11 +539,11 @@ where
 }
 
 /// Convert a tuple of Points into search bounds
-impl<T> From<(Point<T>, Point<T>)> for InputBounds<T>
+impl<'a, T> From<&'a (Point<T>, Point<T>)> for InputBounds<T>
 where
     T: Float,
 {
-    fn from(t: (Point<T>, Point<T>)) -> InputBounds<T> {
+    fn from(t: &(Point<T>, Point<T>)) -> InputBounds<T> {
         InputBounds {
             minimum_lonlat: t.0,
             maximum_lonlat: t.1,
@@ -592,7 +594,7 @@ mod test {
             Point::new(-0.13806939125061035, 51.51989264641164),
             Point::new(-0.13427138328552246, 51.52319711775629),
         );
-        let res = oc.forward_full(&address, &Some(bbox.into())).unwrap();
+        let res = oc.forward_full(&address, Some(&bbox)).unwrap();
         let first_result = &res.results[0];
         assert_eq!(
             first_result.formatted,
