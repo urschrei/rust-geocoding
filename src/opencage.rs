@@ -136,13 +136,14 @@ impl Opencage {
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "UCL CASA";
-    /// // restrict the search space. An `into()` conversion exists for `Point` tuples
-    /// // the first point is the bottom-left corner, the second is the top-right
+    /// // Optionally restrict the search space using a bounding box.
+    /// // The first point is the bottom-left corner, the second is the top-right.
+    /// // Pass None if you don't need bounds.
     /// let bbox = (
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
     ///     Point::new(-0.13427138328552246, 51.52319711775629),
     /// );
-    /// let res = oc.forward_full(&address, Some(&bbox).unwrap();
+    /// let res = oc.forward_full(&address, &bbox.unwrap();
     /// let first_result = &res.results[0];
     /// // the first result is correct
     /// assert_eq!(first_result.formatted, "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom");
@@ -595,7 +596,7 @@ mod test {
             Point::new(-0.13806939125061035, 51.51989264641164),
             Point::new(-0.13427138328552246, 51.52319711775629),
         );
-        let res = oc.forward_full(&address, Some(&bbox)).unwrap();
+        let res = oc.forward_full(&address, &bbox).unwrap();
         let first_result = &res.results[0];
         assert_eq!(
             first_result.formatted,
