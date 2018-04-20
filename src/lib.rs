@@ -31,6 +31,8 @@ use reqwest::{header, Client};
 #[macro_use]
 extern crate hyper;
 
+extern crate chrono;
+
 // The OpenCage geocoding provider
 pub mod opencage;
 pub use opencage::Opencage;

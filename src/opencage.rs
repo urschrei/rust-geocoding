@@ -36,6 +36,9 @@ use super::{header, Client};
 use super::Point;
 use super::{Forward, Reverse};
 
+use super::chrono::naive::serde::ts_seconds::deserialize as from_ts;
+use super::chrono::NaiveDateTime;
+
 // OpenCage has a custom rate-limit header, indicating remaining calls
 header! { (XRatelimitRemaining, "X-RateLimit-Remaining") => [i32] }
 
@@ -493,11 +496,11 @@ pub struct Status {
 }
 
 /// Timestamp metadata
-// TODO: could this be represented as something less naive?
 #[derive(Debug, Deserialize)]
 pub struct Timestamp {
     pub created_http: String,
-    pub created_unix: i64,
+    #[serde(deserialize_with = "from_ts")]
+    pub created_unix: NaiveDateTime,
 }
 
 /// Bounding-box metadata
