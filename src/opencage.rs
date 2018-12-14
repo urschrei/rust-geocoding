@@ -23,24 +23,19 @@
 //! // "Carrer de Calatrava, 68, 08017 Barcelona, Spain"
 //! println!("{:?}", res.unwrap());
 //! ```
+use crate::chrono::naive::serde::ts_seconds::deserialize as from_ts;
+use crate::chrono::NaiveDateTime;
+use crate::Deserialize;
+use crate::Point;
+use crate::UA_STRING;
+use crate::{Client, HeaderMap, HeaderValue, USER_AGENT};
+use crate::{Forward, Reverse};
+use num_traits::Float;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use super::num_traits::Float;
-use std::collections::HashMap;
-
-use super::reqwest;
-use super::Deserialize;
-use super::UA_STRING;
-use super::{header, Client};
-
-use super::Point;
-use super::{Forward, Reverse};
-
-use super::chrono::naive::serde::ts_seconds::deserialize as from_ts;
-use super::chrono::NaiveDateTime;
-
 // OpenCage has a custom rate-limit header, indicating remaining calls
-header! { (XRatelimitRemaining, "X-RateLimit-Remaining") => [i32] }
+// header! { (XRatelimitRemaining, "X-RateLimit-Remaining") => [i32] }
 
 /// An instance of the Opencage Geocoding service
 pub struct Opencage {
@@ -53,8 +48,8 @@ pub struct Opencage {
 impl Opencage {
     /// Create a new OpenCage geocoding instance
     pub fn new(api_key: String) -> Self {
-        let mut headers = header::Headers::new();
-        headers.set(header::UserAgent::new(UA_STRING));
+        let mut headers = HeaderMap::new();
+        headers.insert(USER_AGENT, HeaderValue::from_static(UA_STRING));
         let client = Client::builder()
             .default_headers(headers)
             .build()
@@ -113,14 +108,17 @@ impl Opencage {
                 (&"key", &self.api_key),
                 (&"no_annotations", &String::from("0")),
                 (&"no_record", &String::from("1")),
-            ]).send()?
+            ])
+            .send()?
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
         // it's OK to index into this vec, because reverse-geocoding only returns a single result
-        if let Some(headers) = resp.headers().get::<XRatelimitRemaining>() {
+        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
-                **mutex = Some(**headers)
+                // not ideal, but typed headers are currently impossible in 0.9.x
+                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                **mutex = Some(h)
             }
         }
         Ok(res)
@@ -184,10 +182,12 @@ impl Opencage {
             .send()?
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
-        if let Some(headers) = resp.headers().get::<XRatelimitRemaining>() {
+        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
-                **mutex = Some(**headers)
+                // not ideal, but typed headers are currently impossible in 0.9.x
+                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                **mutex = Some(h)
             }
         }
         Ok(res)
@@ -220,15 +220,18 @@ where
                 (&"key", &self.api_key),
                 (&"no_annotations", &String::from("1")),
                 (&"no_record", &String::from("1")),
-            ]).send()?
+            ])
+            .send()?
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
         // it's OK to index into this vec, because reverse-geocoding only returns a single result
         let address = &res.results[0];
-        if let Some(headers) = resp.headers().get::<XRatelimitRemaining>() {
+        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
-                **mutex = Some(**headers)
+                // not ideal, but typed headers are currently impossible in 0.9.x
+                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                **mutex = Some(h)
             }
         }
         Ok(address.formatted.to_string())
@@ -253,13 +256,16 @@ where
                 (&"key", &self.api_key),
                 (&"no_annotations", &String::from("1")),
                 (&"no_record", &String::from("1")),
-            ]).send()?
+            ])
+            .send()?
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
-        if let Some(headers) = resp.headers().get::<XRatelimitRemaining>() {
+        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
-                **mutex = Some(**headers)
+                // not ideal, but typed headers are currently impossible in 0.9.x
+                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                **mutex = Some(h)
             }
         }
         Ok(res

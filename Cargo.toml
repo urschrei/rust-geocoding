@@ -7,6 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/georust/geocoding"
 keywords = ["gecoding", "geo", "gis", "geospatial"]
 readme = "README.md"
+edition = "2018"
 
 [dependencies]
 geo-types = "0.2.0"
@@ -14,6 +15,6 @@ num-traits = "0.2"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-reqwest ="0.8.5"
-hyper = "0.11.25"
+reqwest ="0.9.5"
+hyper = "0.12.18"
 chrono = { version = "0.4", features = ["serde"] }

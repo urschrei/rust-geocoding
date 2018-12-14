@@ -13,29 +13,18 @@
 //! and returns data in that order.
 //!
 static UA_STRING: &'static str = "Rust-Geocoding";
-extern crate geo_types;
+
+use chrono;
 pub use geo_types::Point;
-
-extern crate num_traits;
 use num_traits::Float;
-
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde;
+use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use reqwest::Client;
 use serde::Deserialize;
-
-extern crate reqwest;
-use reqwest::{header, Client};
-
-#[macro_use]
-extern crate hyper;
-
-extern crate chrono;
+use serde_derive::Deserialize;
 
 // The OpenCage geocoding provider
 pub mod opencage;
-pub use opencage::Opencage;
+pub use crate::opencage::Opencage;
 
 /// Reverse-geocode a coordinate.
 ///
