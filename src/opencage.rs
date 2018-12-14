@@ -521,7 +521,7 @@ where
 
 /// Used to specify a bounding box to search within when forward-geocoding
 ///
-/// - `minimum` refers to the **bottom-left** or **south-west** corner of the bouding box
+/// - `minimum` refers to the **bottom-left** or **south-west** corner of the bounding box
 /// - `maximum` refers to the **top-right** or **north-east** corner of the bounding box.
 #[derive(Debug)]
 pub struct InputBounds<T>
