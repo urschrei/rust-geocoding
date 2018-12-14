@@ -15,6 +15,7 @@
 static UA_STRING: &'static str = "Rust-Geocoding";
 
 use chrono;
+use failure::Error;
 pub use geo_types::Point;
 use num_traits::Float;
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
@@ -52,7 +53,7 @@ where
     // NOTE TO IMPLEMENTERS: Point coordinates are lon, lat (x, y)
     // You may have to provide these coordinates in reverse order,
     // depending on the provider's requirements (see e.g. OpenCage)
-    fn reverse(&self, point: &Point<T>) -> reqwest::Result<String>;
+    fn reverse(&self, point: &Point<T>) -> Result<String, Error>;
 }
 
 /// Forward-geocode a coordinate.
@@ -85,5 +86,5 @@ where
     // NOTE TO IMPLEMENTERS: while returned provider point data may not be in
     // lon, lat (x, y) order, Geocoding requires this order in its output Point
     // data. Please pay attention when using returned data to construct Points
-    fn forward(&self, address: &str) -> reqwest::Result<Vec<Point<T>>>;
+    fn forward(&self, address: &str) -> Result<Vec<Point<T>>, Error>;
 }

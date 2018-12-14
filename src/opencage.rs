@@ -30,6 +30,7 @@ use crate::Point;
 use crate::UA_STRING;
 use crate::{Client, HeaderMap, HeaderValue, USER_AGENT};
 use crate::{Forward, Reverse};
+use failure::Error;
 use num_traits::Float;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -88,7 +89,7 @@ impl Opencage {
     ///     "Carrer de Calatrava"
     /// );
     ///```
-    pub fn reverse_full<T>(&self, point: &Point<T>) -> reqwest::Result<OpencageResponse<T>>
+    pub fn reverse_full<T>(&self, point: &Point<T>) -> Result<OpencageResponse<T>, Error>
     where
         T: Float,
         for<'de> T: Deserialize<'de>,
@@ -118,7 +119,8 @@ impl Opencage {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
-                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                let h = headers.to_str()?;
+                let h: i32 = h.parse()?;
                 **mutex = Some(h)
             }
         }
@@ -154,7 +156,7 @@ impl Opencage {
         &self,
         place: &str,
         bounds: U,
-    ) -> reqwest::Result<OpencageResponse<T>>
+    ) -> Result<OpencageResponse<T>, Error>
     where
         T: Float,
         U: Into<Option<&'a (Point<T>, Point<T>)>>,
@@ -187,7 +189,8 @@ impl Opencage {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
-                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                let h = headers.to_str()?;
+                let h: i32 = h.parse()?;
                 **mutex = Some(h)
             }
         }
@@ -204,7 +207,7 @@ where
     /// returned `String` can be found [here](https://blog.opencagedata.com/post/99059889253/good-looking-addresses-solving-the-berlin-berlin)
     ///
     /// This method passes the `no_annotations` and `no_record` parameters to the API.
-    fn reverse(&self, point: &Point<T>) -> reqwest::Result<String> {
+    fn reverse(&self, point: &Point<T>) -> Result<String, Error> {
         let mut resp = self
             .client
             .get(&self.endpoint)
@@ -231,7 +234,8 @@ where
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
-                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                let h = headers.to_str()?;
+                let h: i32 = h.parse()?;
                 **mutex = Some(h)
             }
         }
@@ -248,7 +252,7 @@ where
     /// of best practices in order to obtain good-quality results.
     ///
     /// This method passes the `no_annotations` and `no_record` parameters to the API.
-    fn forward(&self, place: &str) -> reqwest::Result<Vec<Point<T>>> {
+    fn forward(&self, place: &str) -> Result<Vec<Point<T>>, Error> {
         let mut resp = self
             .client
             .get(&self.endpoint)
@@ -265,7 +269,8 @@ where
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
-                let h: i32 = headers.to_str().unwrap().parse().unwrap();
+                let h = headers.to_str()?;
+                let h: i32 = h.parse()?;
                 **mutex = Some(h)
             }
         }
