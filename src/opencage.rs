@@ -36,6 +36,7 @@ use std::sync::{Arc, Mutex};
 
 // OpenCage has a custom rate-limit header, indicating remaining calls
 // header! { (XRatelimitRemaining, "X-RateLimit-Remaining") => [i32] }
+static XRL: &'static str = "x-ratelimit-remaining";
 
 /// An instance of the Opencage Geocoding service
 pub struct Opencage {
@@ -113,7 +114,7 @@ impl Opencage {
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
         // it's OK to index into this vec, because reverse-geocoding only returns a single result
-        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
+        if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
@@ -182,7 +183,7 @@ impl Opencage {
             .send()?
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
-        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
+        if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
@@ -226,7 +227,7 @@ where
         let res: OpencageResponse<T> = resp.json()?;
         // it's OK to index into this vec, because reverse-geocoding only returns a single result
         let address = &res.results[0];
-        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
+        if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
@@ -260,7 +261,7 @@ where
             .send()?
             .error_for_status()?;
         let res: OpencageResponse<T> = resp.json()?;
-        if let Some(headers) = resp.headers().get::<_>("x-ratelimit-remaining") {
+        if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
             if let Ok(ref mut mutex) = lock {
                 // not ideal, but typed headers are currently impossible in 0.9.x
