@@ -147,20 +147,19 @@ impl Opencage {
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
     ///     Point::new(-0.13427138328552246, 51.52319711775629),
     /// );
-    /// let res = oc.forward_full(&address, &bbox).unwrap();
+    /// let res = oc.forward_full(&address, bbox).unwrap();
     /// let first_result = &res.results[0];
     /// // the first result is correct
     /// assert_eq!(first_result.formatted, "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom");
     ///```
-    pub fn forward_full<'a, U, T>(
+    pub fn forward_full<U, T>(
         &self,
         place: &str,
         bounds: U,
     ) -> Result<OpencageResponse<T>, Error>
     where
         T: Float,
-        U: Into<Option<&'a (Point<T>, Point<T>)>>,
-        T: 'a,
+        U: Into<Option<(Point<T>, Point<T>)>>,
         for<'de> T: Deserialize<'de>,
     {
         let ann = String::from("0");
@@ -175,7 +174,7 @@ impl Opencage {
         ];
         // If search bounds are passed, use them
         if let Some(bds) = bounds.into() {
-            bd = String::from(&InputBounds::from(&*bds));
+            bd = String::from(InputBounds::from(bds));
             query.push(("bounds", &bd));
         }
         let mut resp = self
@@ -539,11 +538,11 @@ where
 }
 
 /// Convert borrowed input bounds into the correct String representation
-impl<'a, T> From<&'a InputBounds<T>> for String
+impl<T> From<InputBounds<T>> for String
 where
     T: Float,
 {
-    fn from(ip: &InputBounds<T>) -> String {
+    fn from(ip: InputBounds<T>) -> String {
         // OpenCage expects lon, lat order here, for some reason
         format!(
             "{},{},{},{}",
@@ -556,11 +555,11 @@ where
 }
 
 /// Convert a tuple of Points into search bounds
-impl<'a, T> From<&'a (Point<T>, Point<T>)> for InputBounds<T>
+impl<T> From<(Point<T>, Point<T>)> for InputBounds<T>
 where
     T: Float,
 {
-    fn from(t: &(Point<T>, Point<T>)) -> InputBounds<T> {
+    fn from(t: (Point<T>, Point<T>)) -> InputBounds<T> {
         InputBounds {
             minimum_lonlat: t.0,
             maximum_lonlat: t.1,
@@ -611,7 +610,7 @@ mod test {
             Point::new(-0.13806939125061035, 51.51989264641164),
             Point::new(-0.13427138328552246, 51.52319711775629),
         );
-        let res = oc.forward_full(&address, &bbox).unwrap();
+        let res = oc.forward_full(&address, bbox).unwrap();
         let first_result = &res.results[0];
         assert_eq!(
             first_result.formatted,
