@@ -129,6 +129,8 @@ impl Opencage {
     /// A forward-geocoding lookup of an address, returning an annotated response.
     ///
     /// You may restrict the search space by passing an optional bounding box to search within.
+    /// You may specify the bounding box coordinates as a 2-tuple of `Point` values, or
+    /// a 2-tuple of _anything that can be converted into `Point` values_.
     /// Please see [the documentation](https://opencagedata.com/api#ambiguous-results) for details
     /// of best practices in order to obtain good-quality results.
     ///
@@ -142,6 +144,7 @@ impl Opencage {
     /// let address = "UCL CASA";
     /// // Optionally restrict the search space using a bounding box.
     /// // The first point is the bottom-left corner, the second is the top-right.
+    /// // You can also pass plain `f32` or `f64` values.
     /// // Pass None if you don't need bounds.
     /// let bbox = (
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
@@ -152,14 +155,15 @@ impl Opencage {
     /// // the first result is correct
     /// assert_eq!(first_result.formatted, "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom");
     ///```
-    pub fn forward_full<U, T>(
+    pub fn forward_full<T, U, V>(
         &self,
         place: &str,
         bounds: U,
     ) -> Result<OpencageResponse<T>, Error>
     where
         T: Float,
-        U: Into<Option<(Point<T>, Point<T>)>>,
+        U: Into<Option<(V, V)>>,
+        V: Into<Point<T>>,
         for<'de> T: Deserialize<'de>,
     {
         let ann = String::from("0");
@@ -554,15 +558,16 @@ where
     }
 }
 
-/// Convert a tuple of Points into search bounds
-impl<T> From<(Point<T>, Point<T>)> for InputBounds<T>
+/// Convert anything that can be converted into a `Point` into search bounds
+impl<T, U> From<(U, U)> for InputBounds<T>
 where
+    U: Into<Point<T>>,
     T: Float,
 {
-    fn from(t: (Point<T>, Point<T>)) -> InputBounds<T> {
+    fn from(t: (U, U)) -> InputBounds<T> {
         InputBounds {
-            minimum_lonlat: t.0,
-            maximum_lonlat: t.1,
+            minimum_lonlat: t.0.into(),
+            maximum_lonlat: t.1.into(),
         }
     }
 }
@@ -609,6 +614,21 @@ mod test {
         let bbox = (
             Point::new(-0.13806939125061035, 51.51989264641164),
             Point::new(-0.13427138328552246, 51.52319711775629),
+        );
+        let res = oc.forward_full(&address, bbox).unwrap();
+        let first_result = &res.results[0];
+        assert_eq!(
+            first_result.formatted,
+            "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom"
+        );
+    }
+    #[test]
+    fn forward_full_test_floats() {
+        let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
+        let address = "UCL CASA";
+        let bbox = (
+            (-0.13806939125061036, 51.51989264641163),
+            (-0.13427138328552245, 51.52319711775630),
         );
         let res = oc.forward_full(&address, bbox).unwrap();
         let first_result = &res.results[0];
