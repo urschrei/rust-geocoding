@@ -35,9 +35,32 @@ use num_traits::Float;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+mod string_or_int {
+    use crate::{Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum StringOrInt {
+            String(String),
+            Int(i32),
+        }
+
+        match StringOrInt::deserialize(deserializer)? {
+            StringOrInt::String(s) => Ok(s),
+            StringOrInt::Int(i) => Ok(i.to_string()),
+        }
+    }
+}
+
 // OpenCage has a custom rate-limit header, indicating remaining calls
 // header! { (XRatelimitRemaining, "X-RateLimit-Remaining") => [i32] }
 static XRL: &'static str = "x-ratelimit-remaining";
+/// Use this constant if you don't need to restrict a `forward_full` call with a bounding box
+pub static NOBOX: Option<((f64, f64), (f64, f64))> = None::<((f64, f64), (f64, f64))>;
 
 /// An instance of the Opencage Geocoding service
 pub struct Opencage {
@@ -131,6 +154,9 @@ impl Opencage {
     /// You may restrict the search space by passing an optional bounding box to search within.
     /// You may specify the bounding box coordinates as a 2-tuple of `Point` values, or
     /// a 2-tuple of _anything that can be converted into `Point` values_.
+    /// If you don't need or want to restrict the search using a bounding box, you
+    /// may pass the [`NOBOX`](static.NOBOX) value instead.
+    ///
     /// Please see [the documentation](https://opencagedata.com/api#ambiguous-results) for details
     /// of best practices in order to obtain good-quality results.
     ///
@@ -144,8 +170,8 @@ impl Opencage {
     /// let address = "UCL CASA";
     /// // Optionally restrict the search space using a bounding box.
     /// // The first point is the bottom-left corner, the second is the top-right.
-    /// // You can also pass plain `f32` or `f64` values.
-    /// // Pass None if you don't need bounds.
+    /// // You can also pass tuples of plain `f32` or `f64` values.
+    /// // Pass NOBOX if you don't need bounds.
     /// let bbox = (
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
     ///     Point::new(-0.13427138328552246, 51.52319711775629),
@@ -472,7 +498,7 @@ where
 /// Currency metadata
 #[derive(Debug, Deserialize)]
 pub struct Currency {
-    pub alternate_symbols: Vec<String>,
+    pub alternate_symbols: Option<Vec<String>>,
     pub decimal_mark: String,
     pub html_entity: String,
     pub iso_code: String,
@@ -500,6 +526,7 @@ pub struct Timezone {
     pub now_in_dst: i16,
     pub offset_sec: i32,
     pub offset_string: i32,
+    #[serde(with = "string_or_int")]
     pub short_name: String,
 }
 
@@ -631,6 +658,21 @@ mod test {
             (-0.13427138328552245, 51.52319711775630),
         );
         let res = oc.forward_full(&address, bbox).unwrap();
+        let first_result = &res.results[0];
+        assert_eq!(
+            first_result.formatted,
+            "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom"
+        );
+    }
+    #[test]
+    fn forward_full_test_nobox() {
+        let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
+        let address = "UCL CASA";
+        // let bbox = (
+        //     (-0.13806939125061036, 51.51989264641163),
+        //     (-0.13427138328552245, 51.52319711775630),
+        // );
+        let res = oc.forward_full(&address, NOBOX).unwrap();
         let first_result = &res.results[0];
         assert_eq!(
             first_result.formatted,
