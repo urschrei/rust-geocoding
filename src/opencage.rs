@@ -152,8 +152,7 @@ impl Opencage {
     /// A forward-geocoding lookup of an address, returning an annotated response.
     ///
     /// You may restrict the search space by passing an optional bounding box to search within.
-    /// You may specify the bounding box coordinates as an [`InputBounds`](struct.InputBounds) struct,
-    /// a 2-tuple of `Point` values, or
+    /// You may specify the bounding box coordinates as a 2-tuple of `Point` values, or
     /// a 2-tuple of _anything that can be converted into [`Point`](struct.Point.html) values_.
     /// If you don't need or want to restrict the search using a bounding box (usually not recommended), you
     /// may pass the [`NOBOX`](static.NOBOX.html) static value in place of a bounding box.
