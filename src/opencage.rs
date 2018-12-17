@@ -152,10 +152,11 @@ impl Opencage {
     /// A forward-geocoding lookup of an address, returning an annotated response.
     ///
     /// You may restrict the search space by passing an optional bounding box to search within.
-    /// You may specify the bounding box coordinates as a 2-tuple of `Point` values, or
-    /// a 2-tuple of _anything that can be converted into `Point` values_.
+    /// You may specify the bounding box coordinates as an [`InputBounds`](struct.InputBounds) struct,
+    /// a 2-tuple of `Point` values, or
+    /// a 2-tuple of _anything that can be converted into [`Point`](struct.Point.html) values_.
     /// If you don't need or want to restrict the search using a bounding box (usually not recommended), you
-    /// may pass the [`NOBOX`](static.NOBOX) static value in place of a bounding box.
+    /// may pass the [`NOBOX`](static.NOBOX.html) static value in place of a bounding box.
     ///
     /// Please see [the documentation](https://opencagedata.com/api#ambiguous-results) for details
     /// of best practices in order to obtain good-quality results.
@@ -164,7 +165,7 @@ impl Opencage {
     ///
     ///```
     /// use geocoding::{Opencage, Point};
-    /// use geocoding::opencage::InputBounds;
+    ///
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "UCL CASA";
