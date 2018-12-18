@@ -60,7 +60,7 @@ mod string_or_int {
 // header! { (XRatelimitRemaining, "X-RateLimit-Remaining") => [i32] }
 static XRL: &'static str = "x-ratelimit-remaining";
 /// Use this constant if you don't need to restrict a `forward_full` call with a bounding box
-pub static NOBOX: Option<((f64, f64), (f64, f64))> = None::<((f64, f64), (f64, f64))>;
+pub static NOBOX: Option<InputBounds<f64>> = None::<InputBounds<f64>>;
 
 /// An instance of the Opencage Geocoding service
 pub struct Opencage {
@@ -151,11 +151,10 @@ impl Opencage {
     }
     /// A forward-geocoding lookup of an address, returning an annotated response.
     ///
-    /// You may restrict the search space by passing an optional bounding box to search within.
-    /// You may specify the bounding box coordinates as a 2-tuple of `Point` values, or
-    /// a 2-tuple of _anything that can be converted into [`Point`](struct.Point.html) values_.
+    /// it is recommended that you restrict the search space by passing a
+    /// [bounding box](struct.InputBounds.html) to search within.
     /// If you don't need or want to restrict the search using a bounding box (usually not recommended), you
-    /// may pass the [`NOBOX`](static.NOBOX.html) static value in place of a bounding box.
+    /// may pass the [`NOBOX`](static.NOBOX.html) static value instead.
     ///
     /// Please see [the documentation](https://opencagedata.com/api#ambiguous-results) for details
     /// of best practices in order to obtain good-quality results.
@@ -164,32 +163,30 @@ impl Opencage {
     ///
     ///```
     /// use geocoding::{Opencage, Point};
-    ///
+    /// use geocoding::opencage::InputBounds;
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "UCL CASA";
     /// // Optionally restrict the search space using a bounding box.
     /// // The first point is the bottom-left corner, the second is the top-right.
-    /// // You can also pass tuples of plain `f32` or `f64` values.
-    /// // Pass NOBOX if you don't need bounds.
-    /// let bbox = (
+    /// let bbox = InputBounds::new(
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
     ///     Point::new(-0.13427138328552246, 51.52319711775629),
     /// );
+    /// // Pass NOBOX if you don't need bounds.
     /// let res = oc.forward_full(&address, bbox).unwrap();
     /// let first_result = &res.results[0];
     /// // the first result is correct
     /// assert_eq!(first_result.formatted, "UCL, 188 Tottenham Court Road, London WC1E 6BT, United Kingdom");
     ///```
-    pub fn forward_full<T, U, V>(
+    pub fn forward_full<T, U>(
         &self,
         place: &str,
         bounds: U,
     ) -> Result<OpencageResponse<T>, Error>
     where
         T: Float,
-        U: Into<Option<(V, V)>>,
-        V: Into<Point<T>>,
+        U: Into<Option<InputBounds<T>>>,
         for<'de> T: Deserialize<'de>,
     {
         let ann = String::from("0");
@@ -559,13 +556,31 @@ where
 ///
 /// - `minimum` refers to the **bottom-left** or **south-west** corner of the bounding box
 /// - `maximum` refers to the **top-right** or **north-east** corner of the bounding box.
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct InputBounds<T>
 where
     T: Float,
 {
     pub minimum_lonlat: Point<T>,
     pub maximum_lonlat: Point<T>,
+}
+
+impl<T> InputBounds<T>
+where
+    T: Float
+{
+    /// Create a new `InputBounds` struct by passing 2 `Point`s defining:
+    /// - minimum (bottom-left) longitude and latitude coordinates
+    /// - maximum (top-right) longitude and latitude coordinates
+    pub fn new<U>(minimum_lonlat: U, maximum_lonlat: U) -> InputBounds<T>
+    where
+        U: Into<Point<T>>
+    {
+        InputBounds {
+            minimum_lonlat: minimum_lonlat.into(),
+            maximum_lonlat: maximum_lonlat.into()
+        }
+    }
 }
 
 /// Convert borrowed input bounds into the correct String representation
@@ -582,20 +597,6 @@ where
             ip.maximum_lonlat.x().to_f64().unwrap().to_string(),
             ip.maximum_lonlat.y().to_f64().unwrap().to_string()
         )
-    }
-}
-
-/// Convert anything that can be converted into a `Point` into search bounds
-impl<T, U> From<(U, U)> for InputBounds<T>
-where
-    U: Into<Point<T>>,
-    T: Float,
-{
-    fn from(t: (U, U)) -> InputBounds<T> {
-        InputBounds {
-            minimum_lonlat: t.0.into(),
-            maximum_lonlat: t.1.into(),
-        }
     }
 }
 
@@ -638,10 +639,10 @@ mod test {
     fn forward_full_test() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL CASA";
-        let bbox = (
-            Point::new(-0.13806939125061035, 51.51989264641164),
-            Point::new(-0.13427138328552246, 51.52319711775629),
-        );
+        let bbox = InputBounds {
+            minimum_lonlat: Point::new(-0.13806939125061035, 51.51989264641164),
+            maximum_lonlat: Point::new(-0.13427138328552246, 51.52319711775629),
+        };
         let res = oc.forward_full(&address, bbox).unwrap();
         let first_result = &res.results[0];
         assert_eq!(
@@ -653,9 +654,9 @@ mod test {
     fn forward_full_test_floats() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL CASA";
-        let bbox = (
-            (-0.13806939125061036, 51.51989264641163),
-            (-0.13427138328552245, 51.52319711775630),
+        let bbox = InputBounds::new(
+            Point::new(-0.13806939125061035, 51.51989264641164),
+            Point::new(-0.13427138328552246, 51.52319711775629),
         );
         let res = oc.forward_full(&address, bbox).unwrap();
         let first_result = &res.results[0];
@@ -668,10 +669,6 @@ mod test {
     fn forward_full_test_nobox() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL CASA";
-        // let bbox = (
-        //     (-0.13806939125061036, 51.51989264641163),
-        //     (-0.13427138328552245, 51.52319711775630),
-        // );
         let res = oc.forward_full(&address, NOBOX).unwrap();
         let first_result = &res.results[0];
         assert_eq!(
