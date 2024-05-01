@@ -1,23 +1,27 @@
 [package]
-name = "geocoding"
-description = "Geocoding library for Rust"
+name = "geocoding-async"
+description = "Asynchronous Geocoding library for Rust"
 version = "0.4.0"
-authors = ["The Georust Developers <admins@georust.org>"]
+authors = ["Randolf J. <rjung@jeongjh.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/georust/geocoding"
 keywords = ["gecoding", "geo", "gis", "geospatial"]
 readme = "README.md"
-edition = "2018"
-rust-version = "1.69"
+edition = "2021"
+rust-version = "1.75"
 
 [dependencies]
-thiserror = "1.0"
-geo-types = "0.7.8"
+thiserror = "1"
+geo-types = "0.7"
 num-traits = "0.2"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-reqwest = { version = "0.11", default-features = false, features = ["default-tls", "blocking", "json"] }
-hyper = "0.14.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+hyper = "1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-test = "0.4"
 
 [features]
 default = ["reqwest/default"]

@@ -1,3 +1,5 @@
+#![allow(async_fn_in_trait)]
+
 //! This crate provides forward– and reverse-geocoding functionality for Rust.
 //! Over time, a variety of providers will be added. Each provider may implement one or both
 //! of the `Forward` and `Reverse` traits, which provide forward– and reverse-geocoding methods.
@@ -29,9 +31,9 @@ static UA_STRING: &str = "Rust-Geocoding";
 
 pub use geo_types::{Coord, Point};
 use num_traits::Float;
-use reqwest::blocking::Client;
 use reqwest::header::ToStrError;
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -73,15 +75,17 @@ pub enum GeocodingError {
 /// Examples
 ///
 /// ```
+/// # tokio_test::block_on(async {
 /// use geocoding::{Opencage, Point, Reverse};
 ///
 /// let p = Point::new(2.12870, 41.40139);
 /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
-/// let res = oc.reverse(&p).unwrap();
+/// let res = oc.reverse(&p).await.unwrap();
 /// assert_eq!(
 ///     res,
 ///     Some("Carrer de Calatrava, 68, 08017 Barcelona, Spain".to_string())
 /// );
+/// # });
 /// ```
 pub trait Reverse<T>
 where
@@ -90,7 +94,7 @@ where
     // NOTE TO IMPLEMENTERS: Point coordinates are lon, lat (x, y)
     // You may have to provide these coordinates in reverse order,
     // depending on the provider's requirements (see e.g. OpenCage)
-    fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError>;
+    async fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError>;
 }
 
 /// Forward-geocode a coordinate.
@@ -101,15 +105,17 @@ where
 /// Examples
 ///
 /// ```
+/// # tokio_test::block_on(async {
 /// use geocoding::{Coord, Forward, Opencage, Point};
 ///
 /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
 /// let address = "Schwabing, München";
-/// let res: Vec<Point<f64>> = oc.forward(address).unwrap();
+/// let res: Vec<Point<f64>> = oc.forward(address).await.unwrap();
 /// assert_eq!(
 ///     res,
 ///     vec![Point(Coord { x: 11.5884858, y: 48.1700887 })]
 /// );
+/// # });
 /// ```
 pub trait Forward<T>
 where
@@ -118,7 +124,7 @@ where
     // NOTE TO IMPLEMENTERS: while returned provider point data may not be in
     // lon, lat (x, y) order, Geocoding requires this order in its output Point
     // data. Please pay attention when using returned data to construct Points
-    fn forward(&self, address: &str) -> Result<Vec<Point<T>>, GeocodingError>;
+    async fn forward(&self, address: &str) -> Result<Vec<Point<T>>, GeocodingError>;
 }
 
 /// Used to specify a bounding box to search within when forward-geocoding

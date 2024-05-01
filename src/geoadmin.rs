@@ -8,12 +8,14 @@
 //! ### Example
 //!
 //! ```
+//! # tokio_test::block_on(async {
 //! use geocoding::{GeoAdmin, Forward, Point};
 //!
 //! let geoadmin = GeoAdmin::new();
 //! let address = "Seftigenstrasse 264, 3084 Wabern";
-//! let res = geoadmin.forward(&address);
+//! let res = geoadmin.forward(&address).await;
 //! assert_eq!(res.unwrap(), vec![Point::new(7.451352119445801, 46.92793655395508)]);
+//! # });
 //! ```
 use crate::Deserialize;
 use crate::GeocodingError;
@@ -136,6 +138,7 @@ impl GeoAdmin {
     /// # Examples
     ///
     /// ```
+    /// # tokio_test::block_on(async {
     /// use geocoding::{GeoAdmin, InputBounds, Point};
     /// use geocoding::geoadmin::{GeoAdminParams, GeoAdminForwardResponse};
     ///
@@ -148,16 +151,17 @@ impl GeoAdmin {
     ///     .with_origins("address")
     ///     .with_bbox(&bbox)
     ///     .build();
-    /// let res: GeoAdminForwardResponse<f64> = geoadmin.forward_full(&params).unwrap();
+    /// let res: GeoAdminForwardResponse<f64> = geoadmin.forward_full(&params).await.unwrap();
     /// let result = &res.features[0];
     /// assert_eq!(
     ///     result.properties.label,
     ///     "Seftigenstrasse 264 <b>3084 Wabern</b>",
     /// );
+    /// # });
     /// ```
-    pub fn forward_full<T>(
+    pub async fn forward_full<T>(
         &self,
-        params: &GeoAdminParams<T>,
+        params: &GeoAdminParams<'_, T>,
     ) -> Result<GeoAdminForwardResponse<T>, GeocodingError>
     where
         T: Float + Debug,
@@ -195,9 +199,10 @@ impl GeoAdmin {
             .client
             .get(&format!("{}SearchServer", self.endpoint))
             .query(&query)
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
-        let res: GeoAdminForwardResponse<T> = resp.json()?;
+        let res: GeoAdminForwardResponse<T> = resp.json().await?;
         Ok(res)
     }
 }
@@ -226,7 +231,7 @@ where
     /// A forward-geocoding lookup of an address. Please see [the documentation](https://api3.geo.admin.ch/services/sdiservices.html#search) for details.
     ///
     /// This method passes the `type`,  `origins`, `limit` and `sr` parameter to the API.
-    fn forward(&self, place: &str) -> Result<Vec<Point<T>>, GeocodingError> {
+    async fn forward(&self, place: &str) -> Result<Vec<Point<T>>, GeocodingError> {
         let resp = self
             .client
             .get(&format!("{}SearchServer", self.endpoint))
@@ -238,9 +243,10 @@ where
                 ("sr", &self.sr),
                 ("geometryFormat", "geojson"),
             ])
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
-        let res: GeoAdminForwardResponse<T> = resp.json()?;
+        let res: GeoAdminForwardResponse<T> = resp.json().await?;
         // return easting & northing consistent
         let results = if vec!["2056", "21781"].contains(&self.sr.as_str()) {
             res.features
@@ -266,7 +272,7 @@ where
     /// returned `String` can be found [here](https://api3.geo.admin.ch/services/sdiservices.html#identify-features)
     ///
     /// This method passes the `format` parameter to the API.
-    fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
+    async fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
         let resp = self
             .client
             .get(&format!("{}MapServer/identify", self.endpoint))
@@ -289,9 +295,10 @@ where
                 ("sr", &self.sr),
                 ("lang", "en"),
             ])
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
-        let res: GeoAdminReverseResponse = resp.json()?;
+        let res: GeoAdminReverseResponse = resp.json().await?;
         if !res.results.is_empty() {
             let properties = &res.results[0].properties;
             let address = format!(
@@ -449,35 +456,35 @@ pub struct ReverseLocationAttributes {
 mod test {
     use super::*;
 
-    #[test]
-    fn new_with_sr_forward_test() {
+    #[tokio::test]
+    async fn new_with_sr_forward_test() {
         let geoadmin = GeoAdmin::new().with_sr("2056");
         let address = "Seftigenstrasse 264, 3084 Wabern";
-        let res = geoadmin.forward(&address);
+        let res = geoadmin.forward(&address).await;
         assert_eq!(res.unwrap(), vec![Point::new(2_600_968.75, 1_197_427.0)]);
     }
 
-    #[test]
-    fn new_with_endpoint_forward_test() {
+    #[tokio::test]
+    async fn new_with_endpoint_forward_test() {
         let geoadmin =
             GeoAdmin::new().with_endpoint("https://api3.geo.admin.ch/rest/services/api/");
         let address = "Seftigenstrasse 264, 3084 Wabern";
-        let res = geoadmin.forward(&address);
+        let res = geoadmin.forward(&address).await;
         assert_eq!(
             res.unwrap(),
             vec![Point::new(7.451352119445801, 46.92793655395508)]
         );
     }
 
-    #[test]
-    fn with_sr_forward_full_test() {
+    #[tokio::test]
+    async fn with_sr_forward_full_test() {
         let geoadmin = GeoAdmin::new().with_sr("2056");
         let bbox = InputBounds::new((2_600_967.75, 1_197_426.0), (2_600_969.75, 1_197_428.0));
         let params = GeoAdminParams::new(&"Seftigenstrasse Bern")
             .with_origins("address")
             .with_bbox(&bbox)
             .build();
-        let res: GeoAdminForwardResponse<f64> = geoadmin.forward_full(&params).unwrap();
+        let res: GeoAdminForwardResponse<f64> = geoadmin.forward_full(&params).await.unwrap();
         let result = &res.features[0];
         assert_eq!(
             result.properties.label,
@@ -485,15 +492,15 @@ mod test {
         );
     }
 
-    #[test]
-    fn forward_full_test() {
+    #[tokio::test]
+    async fn forward_full_test() {
         let geoadmin = GeoAdmin::new();
         let bbox = InputBounds::new((7.4513398, 46.92792859), (7.4513662, 46.9279467));
         let params = GeoAdminParams::new(&"Seftigenstrasse Bern")
             .with_origins("address")
             .with_bbox(&bbox)
             .build();
-        let res: GeoAdminForwardResponse<f64> = geoadmin.forward_full(&params).unwrap();
+        let res: GeoAdminForwardResponse<f64> = geoadmin.forward_full(&params).await.unwrap();
         let result = &res.features[0];
         assert_eq!(
             result.properties.label,
@@ -501,34 +508,34 @@ mod test {
         );
     }
 
-    #[test]
-    fn forward_test() {
+    #[tokio::test]
+    async fn forward_test() {
         let geoadmin = GeoAdmin::new();
         let address = "Seftigenstrasse 264, 3084 Wabern";
-        let res = geoadmin.forward(&address);
+        let res = geoadmin.forward(&address).await;
         assert_eq!(
             res.unwrap(),
             vec![Point::new(7.451352119445801, 46.92793655395508)]
         );
     }
 
-    #[test]
-    fn with_sr_reverse_test() {
+    #[tokio::test]
+    async fn with_sr_reverse_test() {
         let geoadmin = GeoAdmin::new().with_sr("2056");
         let p = Point::new(2_600_968.75, 1_197_427.0);
-        let res = geoadmin.reverse(&p);
+        let res = geoadmin.reverse(&p).await;
         assert_eq!(
             res.unwrap(),
             Some("Seftigenstrasse 264, 3084 Wabern".to_string()),
         );
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "https://github.com/georust/geocoding/pull/45#issuecomment-1592395700"]
-    fn reverse_test() {
+    async fn reverse_test() {
         let geoadmin = GeoAdmin::new();
         let p = Point::new(7.451352119445801, 46.92793655395508);
-        let res = geoadmin.reverse(&p);
+        let res = geoadmin.reverse(&p).await;
         assert_eq!(
             res.unwrap(),
             Some("Seftigenstrasse 264, 3084 Wabern".to_string()),

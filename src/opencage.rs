@@ -15,14 +15,16 @@
 //! ### Example
 //!
 //! ```
+//! # tokio_test::block_on(async {
 //! use geocoding::{Opencage, Point, Reverse};
 //!
 //! let mut oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
 //! oc.parameters.language = Some("fr");
 //! let p = Point::new(2.12870, 41.40139);
-//! let res = oc.reverse(&p);
+//! let res = oc.reverse(&p).await;
 //! // "Carrer de Calatrava, 68, 08017 Barcelone, Espagne"
 //! println!("{:?}", res.unwrap());
+//! # });
 //! ```
 use crate::DeserializeOwned;
 use crate::GeocodingError;
@@ -130,20 +132,25 @@ impl<'a> Opencage<'a> {
     /// # Examples
     ///
     ///```
+    /// # tokio_test::block_on(async {
     /// use geocoding::{Opencage, Point};
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let p = Point::new(2.12870, 41.40139);
     /// // a full `OpencageResponse` struct
-    /// let res = oc.reverse_full(&p).unwrap();
+    /// let res = oc.reverse_full(&p).await.unwrap();
     /// // responses may include multiple results
     /// let first_result = &res.results[0];
     /// assert_eq!(
     ///     first_result.components["road"],
     ///     "Carrer de Calatrava"
     /// );
+    /// # });
     ///```
-    pub fn reverse_full<T>(&self, point: &Point<T>) -> Result<OpencageResponse<T>, GeocodingError>
+    pub async fn reverse_full<T>(
+        &self,
+        point: &Point<T>,
+    ) -> Result<OpencageResponse<T>, GeocodingError>
     where
         T: Float + DeserializeOwned + Debug,
     {
@@ -165,7 +172,8 @@ impl<'a> Opencage<'a> {
             .client
             .get(&self.endpoint)
             .query(&query)
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
         // it's OK to index into this vec, because reverse-geocoding only returns a single result
         if let Some(headers) = resp.headers().get::<_>(XRL) {
@@ -177,7 +185,7 @@ impl<'a> Opencage<'a> {
                 **mutex = Some(h)
             }
         }
-        let res: OpencageResponse<T> = resp.json()?;
+        let res: OpencageResponse<T> = resp.json().await?;
         Ok(res)
     }
     /// A forward-geocoding lookup of an address, returning an annotated response.
@@ -195,6 +203,7 @@ impl<'a> Opencage<'a> {
     /// # Examples
     ///
     ///```
+    /// # tokio_test::block_on(async {
     /// use geocoding::{Opencage, InputBounds, Point};
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
@@ -205,27 +214,31 @@ impl<'a> Opencage<'a> {
     ///     Point::new(-0.13806939125061035, 51.51989264641164),
     ///     Point::new(-0.13427138328552246, 51.52319711775629),
     /// );
-    /// let res = oc.forward_full(&address, bbox).unwrap();
+    /// let res = oc.forward_full(&address, bbox).await.unwrap();
     /// let first_result = &res.results[0];
     /// // the first result is correct
     /// assert!(first_result.formatted.contains("90 Tottenham Court Road"));
+    /// # });
     ///```
     ///
     /// ```
+    /// # tokio_test::block_on(async {
     /// // You can pass NOBOX if you don't need bounds.
     /// use geocoding::{Opencage, InputBounds, Point};
     /// use geocoding::opencage::{NOBOX};
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "Moabit, Berlin";
-    /// let res = oc.forward_full(&address, NOBOX).unwrap();
+    /// let res = oc.forward_full(&address, NOBOX).await.unwrap();
     /// let first_result = &res.results[0];
     /// assert_eq!(
     ///     first_result.formatted,
     ///     "Moabit, Berlin, Germany"
     /// );
+    /// # });
     /// ```
     ///
     /// ```
+    /// # tokio_test::block_on(async {
     /// // There are several ways to construct a Point, such as from a tuple
     /// use geocoding::{Opencage, InputBounds, Point};
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
@@ -234,14 +247,15 @@ impl<'a> Opencage<'a> {
     ///     (-0.13806939125061035, 51.51989264641164),
     ///     (-0.13427138328552246, 51.52319711775629),
     /// );
-    /// let res = oc.forward_full(&address, bbox).unwrap();
+    /// let res = oc.forward_full(&address, bbox).await.unwrap();
     /// let first_result = &res.results[0];
     /// assert!(
     ///     first_result.formatted.contains(
     ///         "90 Tottenham Court Road"
     /// ));
+    /// # });
     /// ```
-    pub fn forward_full<T, U>(
+    pub async fn forward_full<T, U>(
         &self,
         place: &str,
         bounds: U,
@@ -272,7 +286,8 @@ impl<'a> Opencage<'a> {
             .client
             .get(&self.endpoint)
             .query(&query)
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
         if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
@@ -283,7 +298,7 @@ impl<'a> Opencage<'a> {
                 **mutex = Some(h)
             }
         }
-        let res: OpencageResponse<T> = resp.json()?;
+        let res: OpencageResponse<T> = resp.json().await?;
         Ok(res)
     }
 }
@@ -296,7 +311,7 @@ where
     /// returned `String` can be found [here](https://blog.opencagedata.com/post/99059889253/good-looking-addresses-solving-the-berlin-berlin)
     ///
     /// This method passes the `no_annotations` and `no_record` parameters to the API.
-    fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
+    async fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
         let q = format!(
             "{}, {}",
             // OpenCage expects lat, lon order
@@ -315,7 +330,8 @@ where
             .client
             .get(&self.endpoint)
             .query(&query)
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
         if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
@@ -326,7 +342,7 @@ where
                 **mutex = Some(h)
             }
         }
-        let res: OpencageResponse<T> = resp.json()?;
+        let res: OpencageResponse<T> = resp.json().await?;
         // it's OK to index into this vec, because reverse-geocoding only returns a single result
         let address = &res.results[0];
         Ok(Some(address.formatted.to_string()))
@@ -341,7 +357,7 @@ where
     /// of best practices in order to obtain good-quality results.
     ///
     /// This method passes the `no_annotations` and `no_record` parameters to the API.
-    fn forward(&self, place: &str) -> Result<Vec<Point<T>>, GeocodingError> {
+    async fn forward(&self, place: &str) -> Result<Vec<Point<T>>, GeocodingError> {
         let mut query = vec![
             ("q", place),
             ("key", &self.api_key),
@@ -354,7 +370,8 @@ where
             .client
             .get(&self.endpoint)
             .query(&query)
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
         if let Some(headers) = resp.headers().get::<_>(XRL) {
             let mut lock = self.remaining.try_lock();
@@ -365,7 +382,7 @@ where
                 **mutex = Some(h)
             }
         }
-        let res: OpencageResponse<T> = resp.json()?;
+        let res: OpencageResponse<T> = resp.json().await?;
         Ok(res
             .results
             .iter()
@@ -637,34 +654,35 @@ mod test {
     use super::*;
     use crate::Coord;
 
-    #[test]
-    fn reverse_test() {
+    #[tokio::test]
+    async fn reverse_test() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let p = Point::new(2.12870, 41.40139);
-        let res = oc.reverse(&p);
+        let res = oc.reverse(&p).await;
         assert_eq!(
             res.unwrap(),
             Some("Carrer de Calatrava, 68, 08017 Barcelona, Spain".to_string())
         );
     }
 
-    #[test]
-    fn reverse_test_with_params() {
+    #[tokio::test]
+    async fn reverse_test_with_params() {
         let mut oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         oc.parameters.language = Some("fr");
         let p = Point::new(2.12870, 41.40139);
-        let res = oc.reverse(&p);
+        let res = oc.reverse(&p).await;
         assert_eq!(
             res.unwrap(),
             Some("Carrer de Calatrava, 68, 08017 Barcelone, Espagne".to_string())
         );
     }
-    #[test]
+
+    #[tokio::test]
     #[allow(deprecated)]
-    fn forward_test() {
+    async fn forward_test() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "Schwabing, München";
-        let res = oc.forward(&address);
+        let res = oc.forward(&address).await;
         assert_eq!(
             res.unwrap(),
             vec![Point(Coord {
@@ -673,76 +691,76 @@ mod test {
             })]
         );
     }
-    #[test]
-    fn reverse_full_test() {
+    #[tokio::test]
+    async fn reverse_full_test() {
         let mut oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         oc.parameters.language = Some("fr");
         let p = Point::new(2.12870, 41.40139);
-        let res = oc.reverse_full(&p).unwrap();
+        let res = oc.reverse_full(&p).await.unwrap();
         let first_result = &res.results[0];
         assert_eq!(first_result.components["road"], "Carrer de Calatrava");
     }
-    #[test]
-    fn forward_full_test() {
+    #[tokio::test]
+    async fn forward_full_test() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL Centre for Advanced Spatial Analysis";
         let bbox = InputBounds {
             minimum_lonlat: Point::new(-0.13806939125061035, 51.51989264641164),
             maximum_lonlat: Point::new(-0.13427138328552246, 51.52319711775629),
         };
-        let res = oc.forward_full(&address, bbox).unwrap();
+        let res = oc.forward_full(&address, bbox).await.unwrap();
         let first_result = &res.results[0];
         assert!(first_result.formatted.contains("UCL"));
     }
-    #[test]
-    fn forward_full_test_floats() {
+    #[tokio::test]
+    async fn forward_full_test_floats() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL Centre for Advanced Spatial Analysis";
         let bbox = InputBounds::new(
             Point::new(-0.13806939125061035, 51.51989264641164),
             Point::new(-0.13427138328552246, 51.52319711775629),
         );
-        let res = oc.forward_full(&address, bbox).unwrap();
+        let res = oc.forward_full(&address, bbox).await.unwrap();
         let first_result = &res.results[0];
         assert!(
             first_result.formatted.contains("UCL")
                 && first_result.formatted.contains("90 Tottenham Court Road")
         );
     }
-    #[test]
-    fn forward_full_test_pointfrom() {
+    #[tokio::test]
+    async fn forward_full_test_pointfrom() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL Centre for Advanced Spatial Analysis";
         let bbox = InputBounds::new(
             Point::from((-0.13806939125061035, 51.51989264641164)),
             Point::from((-0.13427138328552246, 51.52319711775629)),
         );
-        let res = oc.forward_full(&address, bbox).unwrap();
+        let res = oc.forward_full(&address, bbox).await.unwrap();
         let first_result = &res.results[0];
         assert!(
             first_result.formatted.contains("UCL")
                 && first_result.formatted.contains("90 Tottenham Court Road")
         );
     }
-    #[test]
-    fn forward_full_test_pointinto() {
+    #[tokio::test]
+    async fn forward_full_test_pointinto() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "UCL Centre for Advanced Spatial Analysis";
         let bbox = InputBounds::new(
             (-0.13806939125061035, 51.51989264641164),
             (-0.13427138328552246, 51.52319711775629),
         );
-        let res = oc.forward_full(&address, bbox).unwrap();
+        let res = oc.forward_full(&address, bbox).await.unwrap();
         let first_result = &res.results[0];
         assert!(first_result
             .formatted
             .contains("Tottenham Court Road, London"));
     }
-    #[test]
-    fn forward_full_test_nobox() {
+    #[tokio::test]
+    async fn forward_full_test_nobox() {
         let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
         let address = "Moabit, Berlin, Germany";
-        let res = oc.forward_full(&address, NOBOX).unwrap();
+        let res = oc.forward_full(&address, NOBOX).await.unwrap();
         let first_result = &res.results[0];
         assert_eq!(first_result.formatted, "Moabit, Berlin, Germany");
     }

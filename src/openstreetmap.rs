@@ -9,12 +9,14 @@
 //! ### Example
 //!
 //! ```
+//! # tokio_test::block_on(async {
 //! use geocoding::{Openstreetmap, Forward, Point};
 //!
 //! let osm = Openstreetmap::new();
 //! let address = "Schwabing, München";
-//! let res = osm.forward(&address);
+//! let res = osm.forward(&address).await;
 //! assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
+//! # });
 //! ```
 use crate::GeocodingError;
 use crate::InputBounds;
@@ -124,6 +126,7 @@ impl Openstreetmap {
     /// # Examples
     ///
     /// ```
+    /// # tokio_test::block_on(async {
     /// use geocoding::{Openstreetmap, InputBounds, Point};
     /// use geocoding::openstreetmap::{OpenstreetmapParams, OpenstreetmapResponse};
     ///
@@ -136,13 +139,14 @@ impl Openstreetmap {
     ///     .with_addressdetails(true)
     ///     .with_viewbox(&viewbox)
     ///     .build();
-    /// let res: OpenstreetmapResponse<f64> = osm.forward_full(&params).unwrap();
+    /// let res: OpenstreetmapResponse<f64> = osm.forward_full(&params).await.unwrap();
     /// let result = res.features[0].properties.clone();
     /// assert!(result.display_name.contains("Tottenham Court Road"));
+    /// # });
     /// ```
-    pub fn forward_full<T>(
+    pub async fn forward_full<T>(
         &self,
-        params: &OpenstreetmapParams<T>,
+        params: &OpenstreetmapParams<'_, T>,
     ) -> Result<OpenstreetmapResponse<T>, GeocodingError>
     where
         T: Float + Debug,
@@ -168,9 +172,10 @@ impl Openstreetmap {
             .client
             .get(&format!("{}search", self.endpoint))
             .query(&query)
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
-        let res: OpenstreetmapResponse<T> = resp.json()?;
+        let res: OpenstreetmapResponse<T> = resp.json().await?;
         Ok(res)
     }
 }
@@ -189,14 +194,15 @@ where
     /// A forward-geocoding lookup of an address. Please see [the documentation](https://nominatim.org/release-docs/develop/api/Search/) for details.
     ///
     /// This method passes the `format` parameter to the API.
-    fn forward(&self, place: &str) -> Result<Vec<Point<T>>, GeocodingError> {
+    async fn forward(&self, place: &str) -> Result<Vec<Point<T>>, GeocodingError> {
         let resp = self
             .client
             .get(&format!("{}search", self.endpoint))
             .query(&[(&"q", place), (&"format", &String::from("geojson"))])
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
-        let res: OpenstreetmapResponse<T> = resp.json()?;
+        let res: OpenstreetmapResponse<T> = resp.json().await?;
         Ok(res
             .features
             .iter()
@@ -214,7 +220,7 @@ where
     /// returned `String` can be found [here](https://nominatim.org/release-docs/develop/api/Reverse/)
     ///
     /// This method passes the `format` parameter to the API.
-    fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
+    async fn reverse(&self, point: &Point<T>) -> Result<Option<String>, GeocodingError> {
         let resp = self
             .client
             .get(&format!("{}reverse", self.endpoint))
@@ -223,9 +229,10 @@ where
                 (&"lat", &point.y().to_f64().unwrap().to_string()),
                 (&"format", &String::from("geojson")),
             ])
-            .send()?
+            .send()
+            .await?
             .error_for_status()?;
-        let res: OpenstreetmapResponse<T> = resp.json()?;
+        let res: OpenstreetmapResponse<T> = resp.json().await?;
         let address = &res.features[0];
         Ok(Some(address.properties.display_name.to_string()))
     }
@@ -350,17 +357,17 @@ where
 mod test {
     use super::*;
 
-    #[test]
-    fn new_with_endpoint_forward_test() {
+    #[tokio::test]
+    async fn new_with_endpoint_forward_test() {
         let osm =
             Openstreetmap::new_with_endpoint("https://nominatim.openstreetmap.org/".to_string());
         let address = "Schwabing, München";
-        let res = osm.forward(&address);
+        let res = osm.forward(&address).await;
         assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
     }
 
-    #[test]
-    fn forward_full_test() {
+    #[tokio::test]
+    async fn forward_full_test() {
         let osm = Openstreetmap::new();
         let viewbox = InputBounds::new(
             (-0.13806939125061035, 51.51989264641164),
@@ -370,25 +377,25 @@ mod test {
             .with_addressdetails(true)
             .with_viewbox(&viewbox)
             .build();
-        let res: OpenstreetmapResponse<f64> = osm.forward_full(&params).unwrap();
+        let res: OpenstreetmapResponse<f64> = osm.forward_full(&params).await.unwrap();
         let result = res.features[0].properties.clone();
         assert!(result.display_name.contains("Tottenham Court Road"));
         assert_eq!(result.address.unwrap().city.unwrap(), "London");
     }
 
-    #[test]
-    fn forward_test() {
+    #[tokio::test]
+    async fn forward_test() {
         let osm = Openstreetmap::new();
         let address = "Schwabing, München";
-        let res = osm.forward(&address);
+        let res = osm.forward(&address).await;
         assert_eq!(res.unwrap(), vec![Point::new(11.5884858, 48.1700887)]);
     }
 
-    #[test]
-    fn reverse_test() {
+    #[tokio::test]
+    async fn reverse_test() {
         let osm = Openstreetmap::new();
         let p = Point::new(2.12870, 41.40139);
-        let res = osm.reverse(&p);
+        let res = osm.reverse(&p).await;
         assert!(res
             .unwrap()
             .unwrap()
