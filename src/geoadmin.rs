@@ -113,7 +113,7 @@ impl GeoAdmin {
     ///
     /// Endpoint should include a trailing slash (i.e. "https://api3.geo.admin.ch/rest/services/api/")
     pub fn with_endpoint(mut self, endpoint: &str) -> Self {
-        self.endpoint = endpoint.to_owned();
+        endpoint.clone_into(&mut self.endpoint);
         self
     }
 
@@ -121,7 +121,7 @@ impl GeoAdmin {
     ///
     /// Supported values: 21781 (LV03), 2056 (LV95), 4326 (WGS84) and 3857 (Web Pseudo-Mercator)
     pub fn with_sr(mut self, sr: &str) -> Self {
-        self.sr = sr.to_owned();
+        sr.clone_into(&mut self.sr);
         self
     }
 
@@ -180,7 +180,7 @@ impl GeoAdmin {
         ];
 
         if let Some(bb) = params.bbox.cloned().as_mut() {
-            if vec!["4326", "3857"].contains(&self.sr.as_str()) {
+            if ["4326", "3857"].contains(&self.sr.as_str()) {
                 *bb = InputBounds::new(
                     wgs84_to_lv03(&bb.minimum_lonlat),
                     wgs84_to_lv03(&bb.maximum_lonlat),
@@ -248,7 +248,7 @@ where
             .error_for_status()?;
         let res: GeoAdminForwardResponse<T> = resp.json().await?;
         // return easting & northing consistent
-        let results = if vec!["2056", "21781"].contains(&self.sr.as_str()) {
+        let results = if ["2056", "21781"].contains(&self.sr.as_str()) {
             res.features
                 .iter()
                 .map(|feature| Point::new(feature.properties.y, feature.properties.x)) // y = west-east, x = north-south
