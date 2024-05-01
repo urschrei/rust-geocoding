@@ -24,14 +24,14 @@ jobs:
       - name: Install development tools
         uses: taiki-e/install-action@1eda5d19daf935cb04d43ac3bb1b761ec2c8d8f8
         with:
-          tool: cargo-deny@0.14.21, cargo-udeps@0.1.47, cargo-hack@0.6.28
+          tool: cargo-deny@0.14.21, cargo-udeps@0.1.47
       - name: Install Rust linters
         run: rustup component add clippy rustfmt
       - name: Run checks
         run: |
           cargo fmt --check --all
-          cargo hack --feature-powerset check --locked --workspace
-          cargo hack --feature-powerset clippy --locked --workspace -- -D warnings
+          cargo check --locked --workspace
+          cargo clippy --locked --workspace -- -D warnings
           cargo deny check
           cargo udeps --locked --workspace
   tests:
@@ -60,7 +60,7 @@ jobs:
         with:
           tool: cargo-hack@0.6.28
       - name: Run tests
-        run: cargo hack --feature-powerset test --locked
+        run: cargo test --locked
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
@@ -72,12 +72,12 @@ jobs:
       - name: Install development tools
         uses: taiki-e/install-action@1eda5d19daf935cb04d43ac3bb1b761ec2c8d8f8
         with:
-          tool: cargo-llvm-cov@0.6.9, cargo-hack@0.6.28
+          tool: cargo-llvm-cov@0.6.9
       - name: Create directories
         run: mkdir -p target/llvm-cov/lcov
       - name: Generate code coverage
         run: |
-          cargo hack --feature-powerset llvm-cov --no-report --branch --locked --workspace
+          cargo llvm-cov --no-report --branch --locked --workspace
           cargo llvm-cov report --fail-under-lines 85 --lcov --output-path target/llvm-cov/lcov/${{ github.event.repository.name }}.info
       - name: Upload code coverage
         uses: romeovs/lcov-reporter-action@4cf015aa4afa87b78238301f1e3dc140ea0e1ec6
