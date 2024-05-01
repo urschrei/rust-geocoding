@@ -1,5 +1,9 @@
 # geocoding
 
+> This is an asynchronous version of https://github.com/georust/geocoding.
+> Maintenance of this crate is best effort. If you'd like to add a feature, add
+> it to https://github.com/georust/geocoding before requesting us to merge.
+
 Rust utilities to enrich addresses, cities, countries, and landmarks
 with geographic coordinates through third-party geocoding web services.
 Project is in a very early stage.
@@ -10,8 +14,8 @@ Project is in a very early stage.
 
 Licensed under either of
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
 

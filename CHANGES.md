@@ -1,11 +1,5 @@
 # Changes
 
-## unreleased
-
-- Remove `chrono` dependency
-- update geo-types to 0.7.8
-- bump MSRV to 1.69 to keep CI happy
-
 ### Breaking Changes
 
 Due to previous security issues caused by the `chrono` crate
@@ -28,6 +22,7 @@ the `NaiveDateTime` was replaces by a `UnixTime` type:
 ```
 
 ## 0.4.0
+
 - Update CI to use same Rust versions as geo
 - Switch GeoAdmin API to WGS84
   - <https://github.com/georust/geocoding/pull/43>
@@ -57,12 +52,11 @@ the `NaiveDateTime` was replaces by a `UnixTime` type:
 - Made Opencage and Openstreetmap responses/results serializable so it's easier to store them afterwards
   - <https://github.com/georust/geocoding/pull/31>
 - Replace Failure with Thiserror
-    - <https://github.com/georust/geocoding/pull/34>
+  - <https://github.com/georust/geocoding/pull/34>
 - Update geo-types to 0.5
-    - <https://github.com/georust/geocoding/pull/34>
+  - <https://github.com/georust/geocoding/pull/34>
 - Update reqwest and hyper
-    - <https://github.com/georust/geocoding/pull/35>
-
+  - <https://github.com/georust/geocoding/pull/35>
 
 ## 0.1.0
 
