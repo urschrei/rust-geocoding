@@ -16,7 +16,7 @@
 //!
 //! ```
 //! # tokio_test::block_on(async {
-//! use geocoding::{Opencage, Point, Reverse};
+//! use geocoding_async::{Opencage, Point, Reverse};
 //!
 //! let mut oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
 //! oc.parameters.language = Some("fr");
@@ -133,7 +133,7 @@ impl<'a> Opencage<'a> {
     ///
     ///```
     /// # tokio_test::block_on(async {
-    /// use geocoding::{Opencage, Point};
+    /// use geocoding_async::{Opencage, Point};
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let p = Point::new(2.12870, 41.40139);
@@ -204,7 +204,7 @@ impl<'a> Opencage<'a> {
     ///
     ///```
     /// # tokio_test::block_on(async {
-    /// use geocoding::{Opencage, InputBounds, Point};
+    /// use geocoding_async::{Opencage, InputBounds, Point};
     ///
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "UCL Centre for Advanced Spatial Analysis";
@@ -224,8 +224,8 @@ impl<'a> Opencage<'a> {
     /// ```
     /// # tokio_test::block_on(async {
     /// // You can pass NOBOX if you don't need bounds.
-    /// use geocoding::{Opencage, InputBounds, Point};
-    /// use geocoding::opencage::{NOBOX};
+    /// use geocoding_async::{Opencage, InputBounds, Point};
+    /// use geocoding_async::opencage::{NOBOX};
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "Moabit, Berlin";
     /// let res = oc.forward_full(&address, NOBOX).await.unwrap();
@@ -240,7 +240,7 @@ impl<'a> Opencage<'a> {
     /// ```
     /// # tokio_test::block_on(async {
     /// // There are several ways to construct a Point, such as from a tuple
-    /// use geocoding::{Opencage, InputBounds, Point};
+    /// use geocoding_async::{Opencage, InputBounds, Point};
     /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
     /// let address = "UCL Centre for Advanced Spatial Analysis";
     /// let bbox = InputBounds::new(

@@ -76,7 +76,7 @@ pub enum GeocodingError {
 ///
 /// ```
 /// # tokio_test::block_on(async {
-/// use geocoding::{Opencage, Point, Reverse};
+/// use geocoding_async::{Opencage, Point, Reverse};
 ///
 /// let p = Point::new(2.12870, 41.40139);
 /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
@@ -106,7 +106,7 @@ where
 ///
 /// ```
 /// # tokio_test::block_on(async {
-/// use geocoding::{Coord, Forward, Opencage, Point};
+/// use geocoding_async::{Coord, Forward, Opencage, Point};
 ///
 /// let oc = Opencage::new("dcdbf0d783374909b3debee728c7cc10".to_string());
 /// let address = "Schwabing, München";

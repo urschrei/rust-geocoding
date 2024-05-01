@@ -7,8 +7,8 @@ the `NaiveDateTime` was replaces by a `UnixTime` type:
 
 ```diff
 - use chrono::NaiveDateTime;
-- use geocoding::opencage::Timestamp;
-+ use geocoding::opencage::{Timestamp, UnixTime};
+- use geocoding_async::opencage::Timestamp;
++ use geocoding_async::opencage::{Timestamp, UnixTime};
 
   let created_http = "Mon, 16 May 2022 14:52:47 GMT".to_string();
 

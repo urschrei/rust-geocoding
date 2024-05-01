@@ -10,7 +10,7 @@
 //!
 //! ```
 //! # tokio_test::block_on(async {
-//! use geocoding::{Openstreetmap, Forward, Point};
+//! use geocoding_async::{Openstreetmap, Forward, Point};
 //!
 //! let osm = Openstreetmap::new();
 //! let address = "Schwabing, München";
@@ -52,8 +52,8 @@ where
     /// # Example:
     ///
     /// ```
-    /// use geocoding::{Openstreetmap, InputBounds, Point};
-    /// use geocoding::openstreetmap::{OpenstreetmapParams};
+    /// use geocoding_async::{Openstreetmap, InputBounds, Point};
+    /// use geocoding_async::openstreetmap::{OpenstreetmapParams};
     ///
     /// let viewbox = InputBounds::new(
     ///     (-0.13806939125061035, 51.51989264641164),
@@ -127,8 +127,8 @@ impl Openstreetmap {
     ///
     /// ```
     /// # tokio_test::block_on(async {
-    /// use geocoding::{Openstreetmap, InputBounds, Point};
-    /// use geocoding::openstreetmap::{OpenstreetmapParams, OpenstreetmapResponse};
+    /// use geocoding_async::{Openstreetmap, InputBounds, Point};
+    /// use geocoding_async::openstreetmap::{OpenstreetmapParams, OpenstreetmapResponse};
     ///
     /// let osm = Openstreetmap::new();
     /// let viewbox = InputBounds::new(

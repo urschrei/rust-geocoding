@@ -9,7 +9,7 @@
 //!
 //! ```
 //! # tokio_test::block_on(async {
-//! use geocoding::{GeoAdmin, Forward, Point};
+//! use geocoding_async::{GeoAdmin, Forward, Point};
 //!
 //! let geoadmin = GeoAdmin::new();
 //! let address = "Seftigenstrasse 264, 3084 Wabern";
@@ -53,8 +53,8 @@ where
     /// # Example:
     ///
     /// ```
-    /// use geocoding::{GeoAdmin, InputBounds, Point};
-    /// use geocoding::geoadmin::{GeoAdminParams};
+    /// use geocoding_async::{GeoAdmin, InputBounds, Point};
+    /// use geocoding_async::geoadmin::{GeoAdminParams};
     ///
     /// let bbox = InputBounds::new(
     ///     (7.4513398, 46.92792859),
@@ -139,8 +139,8 @@ impl GeoAdmin {
     ///
     /// ```
     /// # tokio_test::block_on(async {
-    /// use geocoding::{GeoAdmin, InputBounds, Point};
-    /// use geocoding::geoadmin::{GeoAdminParams, GeoAdminForwardResponse};
+    /// use geocoding_async::{GeoAdmin, InputBounds, Point};
+    /// use geocoding_async::geoadmin::{GeoAdminParams, GeoAdminForwardResponse};
     ///
     /// let geoadmin = GeoAdmin::new();
     /// let bbox = InputBounds::new(
